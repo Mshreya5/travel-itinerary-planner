@@ -50,15 +50,20 @@ export default function HomePage() {
 
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
-        {/* BG image right side */}
+        {/* Beautiful full-page travel background */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920&q=80"
-            alt=""
-            className="w-full h-full object-cover opacity-20"
+            src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=95"
+            alt="Travel background"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 55%' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/90 to-dark/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent" />
+          {/* Left-side dark fade so text is crisp */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
+          {/* Bottom fade into page */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-[#0a0a0a]/40" />
+          {/* Gold shimmer layer */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.08) 0%, transparent 60%)' }} />
         </div>
 
         {/* Glow blobs */}

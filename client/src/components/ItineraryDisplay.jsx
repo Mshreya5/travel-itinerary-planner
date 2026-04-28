@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   BookmarkPlus, DollarSign, Calendar, Clock,
   CheckCircle2, Download, CalendarDays, Car, Route, MapPin,
-  Building2, Utensils, Camera
+  Building2, Utensils, Camera, Backpack, CheckSquare
 } from 'lucide-react';
 import DayCard from './DayCard';
 import WeatherWidget from './WeatherWidget';
@@ -15,7 +15,67 @@ const TABS = [
   { id: 'places',    label: 'Places',     icon: MapPin      },
   { id: 'events',    label: 'Events',     icon: CalendarDays },
   { id: 'transport', label: 'Transport',  icon: Car          },
+  { id: 'packing',   label: 'Pack List',  icon: Backpack     },
 ];
+
+const PackingList = ({ packingList }) => {
+  const [checked, setChecked] = useState({});
+  if (!packingList?.length) return <p className="text-zinc-500 text-sm">No packing data available.</p>;
+  const toggle = (cat, item) => setChecked((p) => ({ ...p, [`${cat}|${item}`]: !p[`${cat}|${item}`] }));
+  const total   = packingList.reduce((s, c) => s + c.items.length, 0);
+  const done    = Object.values(checked).filter(Boolean).length;
+  return (
+    <div className="space-y-5">
+      {/* Progress bar */}
+      <div className="flex items-center gap-3 p-4 bg-dark-5 rounded-xl border border-dark-border">
+        <Backpack className="w-5 h-5 text-gold flex-shrink-0" />
+        <div className="flex-1">
+          <div className="flex justify-between text-xs mb-1.5">
+            <span className="text-zinc-400 font-semibold">Packing Progress</span>
+            <span className="text-gold font-bold">{done}/{total} items</span>
+          </div>
+          <div className="h-1.5 bg-dark-border rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-gold-dark to-gold rounded-full transition-all duration-500"
+              style={{ width: total ? `${(done / total) * 100}%` : '0%' }}
+            />
+          </div>
+        </div>
+      </div>
+      {/* Categories */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {packingList.map((cat) => (
+          <div key={cat.category} className="bg-dark-5 rounded-xl border border-dark-border p-4">
+            <h4 className="text-sm font-bold text-gold mb-3 flex items-center gap-2">
+              <CheckSquare className="w-4 h-4" /> {cat.category}
+            </h4>
+            <ul className="space-y-2">
+              {cat.items.map((item) => {
+                const key = `${cat.category}|${item}`;
+                return (
+                  <li
+                    key={item}
+                    onClick={() => toggle(cat.category, item)}
+                    className="flex items-center gap-2.5 cursor-pointer group"
+                  >
+                    <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
+                      checked[key] ? 'bg-gold border-gold' : 'border-zinc-600 group-hover:border-gold/50'
+                    }`}>
+                      {checked[key] && <CheckCircle2 className="w-3 h-3 text-dark" />}
+                    </div>
+                    <span className={`text-sm transition-colors ${
+                      checked[key] ? 'line-through text-zinc-600' : 'text-zinc-300 group-hover:text-white'
+                    }`}>{item}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const downloadItinerary = (itinerary) => {
   const lines = [
@@ -146,6 +206,11 @@ const ItineraryDisplay = ({ itinerary, onSave, saved }) => {
                   {itinerary.transport.length}
                 </span>
               )}
+              {id === 'packing' && itinerary.packingList?.length > 0 && (
+                <span className="px-1.5 py-0.5 bg-gold/20 text-gold text-xs rounded-full font-bold">
+                  {itinerary.packingList.reduce((s, c) => s + c.items.length, 0)}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -255,6 +320,16 @@ const ItineraryDisplay = ({ itinerary, onSave, saved }) => {
           )}
           {activeTab === 'transport' && (
             <TransportSection transport={itinerary.transport || []} destination={itinerary.destination} />
+          )}
+          {activeTab === 'packing' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-4">
+                <Backpack className="w-4 h-4 text-gold" />
+                <h3 className="font-bold text-white">Things to Carry</h3>
+                <span className="text-zinc-500 text-xs">— tap items to check them off</span>
+              </div>
+              <PackingList packingList={itinerary.packingList} />
+            </div>
           )}
         </div>
       </div>

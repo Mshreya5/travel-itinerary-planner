@@ -600,6 +600,48 @@ const ACTIVITIES = {
 const MULTIPLIERS = { budget: 0.7, 'mid-range': 1, luxury: 1.8 };
 const DAY_THEMES  = ['Exploration Day', 'Culture & History', 'Adventure & Thrills', 'Relaxation Day', 'Food & Shopping'];
 
+// ─── Packing List ─────────────────────────────────────────────────────────────
+const BASE_PACKING = [
+  { category: 'Documents', items: ['Passport / ID', 'Travel insurance', 'Hotel bookings printout', 'Flight tickets', 'Emergency contacts'] },
+  { category: 'Money', items: ['Credit / Debit cards', 'Local currency cash', 'Travel wallet'] },
+  { category: 'Health', items: ['Prescription medicines', 'Basic first-aid kit', 'Hand sanitiser', 'Face masks', 'Sunscreen SPF 50+'] },
+  { category: 'Electronics', items: ['Phone + charger', 'Power bank', 'Universal adapter', 'Earphones', 'Camera'] },
+  { category: 'Clothing', items: ['Comfortable walking shoes', 'Weather-appropriate clothes', 'Undergarments (extra)', 'Sleepwear', 'Light jacket'] },
+];
+
+const DESTINATION_PACKING = {
+  beach:   { category: 'Beach Essentials', items: ['Swimwear', 'Beach towel', 'Flip-flops', 'Waterproof bag', 'Snorkelling gear'] },
+  cold:    { category: 'Cold Weather', items: ['Thermal innerwear', 'Heavy jacket / parka', 'Gloves & scarf', 'Woollen socks', 'Snow boots'] },
+  tropical:{ category: 'Tropical Climate', items: ['Insect repellent', 'Light breathable clothes', 'Rain poncho', 'Rehydration sachets', 'Cooling towel'] },
+  temple:  { category: 'Temple / Religious Sites', items: ['Modest clothing (cover shoulders & knees)', 'Scarf / shawl', 'Slip-on shoes', 'Small offering / donation'] },
+  adventure:{ category: 'Adventure / Trekking', items: ['Trekking shoes', 'Backpack (day pack)', 'Water bottle (reusable)', 'Energy bars', 'Headlamp / torch'] },
+  city:    { category: 'City Travel', items: ['Metro / transit card', 'City map / offline maps', 'Compact umbrella', 'Anti-theft bag', 'Portable WiFi / SIM'] },
+};
+
+const DEST_PACK_MAP = {
+  bali: ['beach', 'tropical', 'temple'], maldives: ['beach', 'tropical'],
+  goa: ['beach', 'tropical'], kerala: ['tropical', 'temple'],
+  tokyo: ['city', 'temple'], kyoto: ['city', 'temple'],
+  paris: ['city'], london: ['city'], 'new york': ['city'],
+  dubai: ['city', 'beach'], singapore: ['city', 'tropical'],
+  bangkok: ['city', 'temple', 'tropical'], rome: ['city', 'temple'],
+  barcelona: ['city', 'beach'], sydney: ['city', 'beach'],
+  switzerland: ['cold', 'adventure'], greece: ['beach', 'city'],
+  mysore: ['city', 'temple'], mangalore: ['tropical', 'beach'],
+  udupi: ['tropical', 'temple'], bangalore: ['city'],
+};
+
+const getPackingList = (destination, interests) => {
+  const key = destination.toLowerCase().trim();
+  const types = DEST_PACK_MAP[key] || ['city'];
+  const interestList = interests.toLowerCase();
+  if (interestList.includes('adventure')) types.push('adventure');
+  if (interestList.includes('beach') || interestList.includes('relaxation')) types.push('beach');
+  const unique = [...new Set(types)];
+  const extra = unique.map((t) => DESTINATION_PACKING[t]).filter(Boolean);
+  return [...BASE_PACKING, ...extra];
+};
+
 // Helper to get destination data (case-insensitive)
 const getDestinationData = (destination) => {
   const key = destination.toLowerCase().trim();
@@ -740,7 +782,8 @@ const generateItinerary = (destination, numDays, budget, interests) => {
     bestTime: destData ? `Best time to visit: October to March for pleasant weather` : 'Year-round, but best in spring (March–May)',
     hotels: hotels.slice(0, 3),
     restaurants: restaurants.slice(0, 3),
-    attractions: attractions.slice(0, 6)
+    attractions: attractions.slice(0, 6),
+    packingList: getPackingList(destination, interests),
   };
 };
 
