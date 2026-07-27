@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { MapPin, Calendar, Wallet, Heart, Sparkles } from 'lucide-react';
 
 const BUDGET_OPTIONS = [
-  { value: '',          label: 'Select budget range'           },
-  { value: 'budget',    label: '💼  Budget  ($500 – $2,000)'  },
+  { value: '',          label: 'Select budget range' },
+  { value: 'budget',    label: '💼  Budget  ($500 – $2,000)' },
   { value: 'mid-range', label: '✈️   Mid-range ($2,000 – $5,000)' },
-  { value: 'luxury',    label: '👑  Luxury  ($5,000+)'        },
+  { value: 'luxury',    label: '👑  Luxury  ($5,000+)' },
 ];
 
 const INTEREST_CHIPS = ['culture', 'food', 'adventure', 'relaxation', 'shopping', 'nature'];
@@ -18,19 +18,28 @@ const ItineraryForm = ({ onSubmit, loading, preFilledDestination = '' }) => {
     interests: '',
   });
   const [errors, setErrors] = useState({});
-  const [chips, setChips]   = useState([]);
+  const [chips, setChips] = useState([]);
 
   const toggleChip = (chip) => {
-    const next = chips.includes(chip) ? chips.filter((c) => c !== chip) : [...chips, chip];
+    let next;
+    if (chips.includes(chip)) {
+      next = chips.filter((c) => c !== chip);
+    } else {
+      next = [...chips, chip];
+    }
     setChips(next);
-    setFormData((p) => ({ ...p, interests: next.join(', ') }));
-    if (errors.interests) setErrors((p) => ({ ...p, interests: '' }));
+    setFormData((prev) => ({ ...prev, interests: next.join(', ') }));
+    if (errors.interests) {
+      setErrors((prev) => ({ ...prev, interests: '' }));
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: '' }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const validate = () => {
@@ -46,19 +55,22 @@ const ItineraryForm = ({ onSubmit, loading, preFilledDestination = '' }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
     onSubmit(formData);
   };
 
-  const inputCls = (name) =>
-    `w-full px-4 py-3 bg-dark-5 border rounded-xl text-white placeholder-zinc-600 text-sm
-     focus:outline-none focus:ring-1 focus:ring-gold/50 focus:border-gold/50 transition-all duration-200 ${
-       errors[name] ? 'border-red-500/50 bg-red-500/5' : 'border-dark-7 hover:border-zinc-600'
-     }`;
+  const inputCls = (name) => {
+    const base = 'w-full px-4 py-3 bg-dark-5 border rounded-xl text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-1 focus:ring-gold/50 focus:border-gold/50 transition-all duration-200';
+    const err = 'border-red-500/50 bg-red-500/5';
+    const normal = 'border-dark-7 hover:border-zinc-600';
+    return `${base} ${errors[name] ? err : normal}`;
+  };
 
   return (
     <div className="bg-dark-3 rounded-2xl border border-dark-border overflow-hidden">
-      {/* Header */}
       <div className="px-6 py-5 border-b border-dark-border">
         <h2 className="font-bold text-white text-lg">Trip Details</h2>
         <p className="text-zinc-500 text-sm mt-0.5">Fill in the details below</p>
@@ -92,7 +104,8 @@ const ItineraryForm = ({ onSubmit, loading, preFilledDestination = '' }) => {
             value={formData.days}
             onChange={handleChange}
             placeholder="e.g., 7"
-            min="1" max="30"
+            min="1"
+            max="30"
             className={inputCls('days')}
           />
           {errors.days && <p className="text-red-400 text-xs mt-1">{errors.days}</p>}
@@ -110,7 +123,9 @@ const ItineraryForm = ({ onSubmit, loading, preFilledDestination = '' }) => {
             className={`${inputCls('budget')} cursor-pointer`}
           >
             {BUDGET_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value} className="bg-dark-5">{o.label}</option>
+              <option key={o.value} value={o.value} className="bg-dark-5">
+                {o.label}
+              </option>
             ))}
           </select>
           {errors.budget && <p className="text-red-400 text-xs mt-1">{errors.budget}</p>}
@@ -121,22 +136,24 @@ const ItineraryForm = ({ onSubmit, loading, preFilledDestination = '' }) => {
           <label className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
             <Heart className="w-3.5 h-3.5 text-gold" /> Interests
           </label>
-          {/* Quick chips */}
           <div className="flex flex-wrap gap-2 mb-2">
-            {INTEREST_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => toggleChip(chip)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200 capitalize ${
-                  chips.includes(chip)
-                    ? 'bg-gold/20 border-gold/50 text-gold'
-                    : 'bg-dark-5 border-dark-7 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {chip}
-              </button>
-            ))}
+            {INTEREST_CHIPS.map((chip) => {
+              const active = chips.includes(chip);
+              return (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => toggleChip(chip)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200 capitalize ${
+                    active
+                      ? 'bg-gold/20 border-gold/50 text-gold'
+                      : 'bg-dark-5 border-dark-7 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {chip}
+                </button>
+              );
+            })}
           </div>
           <input
             type="text"

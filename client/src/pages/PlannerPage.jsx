@@ -6,7 +6,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import { MapPin, Sparkles, Backpack, Map } from 'lucide-react';
 
-// Destination coordinates for the map
 const DEST_COORDS = {
   paris: [48.8566, 2.3522], tokyo: [35.6762, 139.6503], bali: [-8.3405, 115.0920],
   'new york': [40.7128, -74.0060], london: [51.5074, -0.1278], dubai: [25.2048, 55.2708],
@@ -24,17 +23,17 @@ const getMapUrl = (destination) => {
     const [lat, lon] = coords;
     return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.3},${lat - 0.2},${lon + 0.3},${lat + 0.2}&layer=mapnik&marker=${lat},${lon}`;
   }
-  // fallback: search by name
   return `https://www.openstreetmap.org/export/embed.html?bbox=-180,-85,180,85&layer=mapnik`;
 };
 
 const PlannerPage = () => {
   const [itinerary, setItinerary] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
-  const [saved, setSaved]         = useState(false);
-  const [searchParams]            = useSearchParams();
-  const { token }                 = useAuth();
+  const [lastFormData, setLastFormData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const [searchParams] = useSearchParams();
+  const { token } = useAuth();
 
   const preFilledDestination = searchParams.get('destination') || '';
 
@@ -42,8 +41,11 @@ const PlannerPage = () => {
     setLoading(true);
     setError(null);
     setSaved(false);
+    setLastFormData(formData);
+
     try {
       const dest = encodeURIComponent(formData.destination);
+
       const [planRes, eventsRes, transportRes] = await Promise.all([
         fetch('/api/plan', {
           method: 'POST',
@@ -59,11 +61,15 @@ const PlannerPage = () => {
         throw new Error(err.error || 'Failed to generate itinerary.');
       }
 
-      const [planData, eventsData, transportData] = await Promise.all([
-        planRes.json(), eventsRes.json(), transportRes.json(),
-      ]);
+      const planData = await planRes.json();
+      const eventsData = await eventsRes.json();
+      const transportData = await transportRes.json();
 
-      setItinerary({ ...planData, events: eventsData.events || [], transport: transportData.transport || [] });
+      setItinerary({
+        ...planData,
+        events: eventsData.events || [],
+        transport: transportData.transport || [],
+      });
     } catch (err) {
       setError(err.message || 'Failed to generate itinerary. Please try again.');
     } finally {
@@ -76,11 +82,20 @@ const PlannerPage = () => {
     try {
       const res = await fetch('/api/plans/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(itinerary),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...itinerary,
+          budget: lastFormData?.budget,
+          interests: lastFormData?.interests,
+        }),
       });
       if (res.ok) setSaved(true);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error('Save failed:', err);
+    }
   };
 
   return (
@@ -97,10 +112,9 @@ const PlannerPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
-        {/* Two-column layout on large screens */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-          {/* LEFT — Form (sticky) */}
+          {/* LEFT — Form */}
           <div className="w-full lg:w-[400px] lg:sticky lg:top-24 flex-shrink-0">
             <ItineraryForm
               onSubmit={handlePlanTrip}
@@ -138,9 +152,8 @@ const PlannerPage = () => {
               <>
                 <ItineraryDisplay itinerary={itinerary} onSave={handleSave} saved={saved} />
 
-                {/* ── MAP ── */}
+                {/* Map */}
                 <div className="mt-6 rounded-2xl overflow-hidden border border-dark-border bg-dark-3">
-                  {/* Map header */}
                   <div className="flex items-center justify-between px-5 py-4 border-b border-dark-border">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center">
@@ -148,7 +161,9 @@ const PlannerPage = () => {
                       </div>
                       <div>
                         <h3 className="font-bold text-white text-sm">Destination Map</h3>
-                        <p className="text-zinc-500 text-xs">{itinerary.destination}{itinerary.country ? `, ${itinerary.country}` : ''}</p>
+                        <p className="text-zinc-500 text-xs">
+                          {itinerary.destination}{itinerary.country ? `, ${itinerary.country}` : ''}
+                        </p>
                       </div>
                     </div>
                     <a
@@ -160,7 +175,6 @@ const PlannerPage = () => {
                       <MapPin className="w-3 h-3" /> Open Full Map
                     </a>
                   </div>
-                  {/* Map iframe */}
                   <div className="relative" style={{ height: '380px' }}>
                     <iframe
                       key={itinerary.destination}
@@ -172,7 +186,6 @@ const PlannerPage = () => {
                       loading="lazy"
                       allowFullScreen
                     />
-                    {/* Gold pin overlay */}
                     <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 bg-dark-3/90 backdrop-blur-sm border border-gold/20 rounded-lg pointer-events-none">
                       <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
                       <span className="text-gold text-xs font-semibold">{itinerary.destination}</span>
@@ -180,8 +193,7 @@ const PlannerPage = () => {
                   </div>
                 </div>
 
-                {/* Things to Carry hint */}
-                {itinerary.packingList?.length > 0 && (
+                {itinerary.packingList && itinerary.packingList.length > 0 && (
                   <div className="mt-4 flex items-center gap-3 p-4 rounded-xl bg-gold/5 border border-gold/20">
                     <Backpack className="w-5 h-5 text-gold flex-shrink-0" />
                     <p className="text-sm text-zinc-300">

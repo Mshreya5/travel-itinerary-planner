@@ -854,26 +854,35 @@ router.get('/plans/all', async (req, res) => {
 });
 
 // ─── POST /api/plans/save ─────────────────────────────────────────────────────
-// Explicitly save / update an itinerary (requires login)
 router.post('/plans/save', auth, async (req, res) => {
   try {
-    const itinerary = req.body;
-    if (!itinerary?.destination) {
+    const body = req.body;
+
+    if (!body || !body.destination) {
       return res.status(400).json({ error: 'Invalid itinerary data.' });
     }
+
+    // days comes in as an array of day objects from the frontend
+    const numDays = Array.isArray(body.days) ? body.days.length : (body.days || 1);
+
+    // validate budget — default to mid-range if something unexpected comes through
+    const validBudgets = ['budget', 'mid-range', 'luxury'];
+    const budget = validBudgets.includes(body.budget) ? body.budget : 'mid-range';
+
     const plan = await TravelPlan.findOneAndUpdate(
-      { destination: itinerary.destination, userId: req.user.userId },
+      { destination: body.destination, userId: req.user.userId },
       {
-        destination: itinerary.destination,
-        days:        itinerary.days?.length || 0,
-        budget:      itinerary.budget || 'mid-range',
-        interests:   itinerary.interests || '',
-        itinerary,
-        userId:      req.user.userId,
+        destination: body.destination,
+        days: numDays,
+        budget: budget,
+        interests: body.interests || '',
+        itinerary: body,
+        userId: req.user.userId,
       },
       { upsert: true, new: true }
     );
-    console.log(`✅ Plan saved by user ${req.user.userId} — ${itinerary.destination}`);
+
+    console.log(`Plan saved — user: ${req.user.userId}, destination: ${body.destination}`);
     res.json({ message: 'Itinerary saved successfully.', id: plan._id });
   } catch (err) {
     console.error('Error saving plan:', err);
