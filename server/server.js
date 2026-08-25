@@ -15,13 +15,27 @@ app.use(cors());
 app.use(express.json());
 
 // ─── Database ─────────────────────────────────────────────────────────────────
-mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/travel-itinerary')
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch((err) => {
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected || mongoose.connection.readyState >= 1) {
+    isConnected = true;
+    return;
+  }
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/travel-itinerary');
+    isConnected = true;
+    console.log('✅ MongoDB connected');
+  } catch (err) {
     console.log('⚠️  MongoDB not available – itineraries will not be persisted.');
     console.log('   Error:', err.message);
-  });
+  }
+};
+
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api', planRoutes);
@@ -39,6 +53,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
